@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
 import { App } from './app';
+import { QueueService } from './services/queue.service';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -11,6 +12,9 @@ describe('App', () => {
       declarations: [
         App
       ],
+      providers: [
+        QueueService
+      ]
     }).compileComponents();
   });
 
@@ -18,12 +22,5 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
-  });
-
-  it('should render title', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, projetoWebAtendimento');
   });
 });

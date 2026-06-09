@@ -1,344 +1,632 @@
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * The content below * * * * * * * * * * * -->
-<!-- * * * * * * * * * * is only a placeholder * * * * * * * * * * -->
-<!-- * * * * * * * * * * and can be replaced.  * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * Delete the template below * * * * * * * * * -->
-<!-- * * * * * * * to get started with your project! * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
+<main class="app-container">
+  
+  <!-- Cabeçalho Principal (Não exibido se a TV estiver em tela cheia ou ao imprimir) -->
+  @if (!tvFullscreen() || activeScreen() !== 'panel') {
+    <header class="no-print">
+      <div class="brand-section">
+        <div class="brand-icon">SG</div>
+        <div>
+          <h1>Smart<span>Guichê</span></h1>
+          <p style="font-size: 0.75rem; color: var(--text-muted);">Controle de Fila & Atendimento</p>
+        </div>
+      </div>
 
-<style>
-  :host {
-    --bright-blue: oklch(51.01% 0.274 263.83);
-    --electric-violet: oklch(53.18% 0.28 296.97);
-    --french-violet: oklch(47.66% 0.246 305.88);
-    --vivid-pink: oklch(69.02% 0.277 332.77);
-    --hot-red: oklch(61.42% 0.238 15.34);
-    --orange-red: oklch(63.32% 0.24 31.68);
+      <!-- Controles Globais da Simulação -->
+      <div class="simulation-controls">
+        <div class="sim-clock-display">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-info);">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <div>
+            <div class="clock-time">{{ formatSimulatedTime(queueService.state().simulatedTime) }}</div>
+            <div class="clock-date">{{ queueService.state().simulatedDate }}</div>
+          </div>
+        </div>
 
-    --gray-900: oklch(19.37% 0.006 300.98);
-    --gray-700: oklch(36.98% 0.014 302.71);
-    --gray-400: oklch(70.9% 0.015 304.04);
+        <div class="btn-group">
+          <!-- Play / Pause -->
+          @if (!queueService.state().isPlaying) {
+            <button (click)="queueService.startSimulation()" class="btn-primary" [disabled]="queueService.state().simulatedTime >= 1020">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Iniciar Relógio
+            </button>
+          } @else {
+            <button (click)="queueService.pauseSimulation()" class="btn-danger">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+              Pausar
+            </button>
+          }
 
-    --red-to-pink-to-purple-vertical-gradient: linear-gradient(
-      180deg,
-      var(--orange-red) 0%,
-      var(--vivid-pink) 50%,
-      var(--electric-violet) 100%
-    );
+          <!-- Avançar tempo -->
+          <button (click)="queueService.advanceTime(1)" [disabled]="queueService.state().simulatedTime >= 1020" class="btn-outline-info">
+            +1 Min
+          </button>
 
-    --red-to-pink-to-purple-horizontal-gradient: linear-gradient(
-      90deg,
-      var(--orange-red) 0%,
-      var(--vivid-pink) 50%,
-      var(--electric-violet) 100%
-    );
-
-    --pill-accent: var(--bright-blue);
-
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-      "Segoe UI Symbol";
-    box-sizing: border-box;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    display: block;
-    height: 100dvh;
-  }
-
-  h1 {
-    font-size: 3.125rem;
-    color: var(--gray-900);
-    font-weight: 500;
-    line-height: 100%;
-    letter-spacing: -0.125rem;
-    margin: 0;
-    font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-      "Segoe UI Symbol";
-  }
-
-  p {
-    margin: 0;
-    color: var(--gray-700);
-  }
-
-  main {
-    width: 100%;
-    min-height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 1rem;
-    box-sizing: inherit;
-    position: relative;
-  }
-
-  .angular-logo {
-    max-width: 9.2rem;
-  }
-
-  .content {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
-    max-width: 700px;
-    margin-bottom: 3rem;
-  }
-
-  .content h1 {
-    margin-top: 1.75rem;
-  }
-
-  .content p {
-    margin-top: 1.5rem;
-  }
-
-  .divider {
-    width: 1px;
-    background: var(--red-to-pink-to-purple-vertical-gradient);
-    margin-inline: 0.5rem;
-  }
-
-  .pill-group {
-    display: flex;
-    flex-direction: column;
-    align-items: start;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-  }
-
-  .pill {
-    display: flex;
-    align-items: center;
-    --pill-accent: var(--bright-blue);
-    background: color-mix(in srgb, var(--pill-accent) 5%, transparent);
-    color: var(--pill-accent);
-    padding-inline: 0.75rem;
-    padding-block: 0.375rem;
-    border-radius: 2.75rem;
-    border: 0;
-    transition: background 0.3s ease;
-    font-family: var(--inter-font);
-    font-size: 0.875rem;
-    font-style: normal;
-    font-weight: 500;
-    line-height: 1.4rem;
-    letter-spacing: -0.00875rem;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .pill:hover {
-    background: color-mix(in srgb, var(--pill-accent) 15%, transparent);
-  }
-
-  .pill-group .pill:nth-child(6n + 1) {
-    --pill-accent: var(--bright-blue);
-  }
-  .pill-group .pill:nth-child(6n + 2) {
-    --pill-accent: var(--electric-violet);
-  }
-  .pill-group .pill:nth-child(6n + 3) {
-    --pill-accent: var(--french-violet);
-  }
-
-  .pill-group .pill:nth-child(6n + 4),
-  .pill-group .pill:nth-child(6n + 5),
-  .pill-group .pill:nth-child(6n + 6) {
-    --pill-accent: var(--hot-red);
-  }
-
-  .pill-group svg {
-    margin-inline-start: 0.25rem;
-  }
-
-  .social-links {
-    display: flex;
-    align-items: center;
-    gap: 0.73rem;
-    margin-top: 1.5rem;
-  }
-
-  .social-links path {
-    transition: fill 0.3s ease;
-    fill: var(--gray-400);
-  }
-
-  .social-links a:hover svg path {
-    fill: var(--gray-900);
-  }
-
-  @media screen and (max-width: 650px) {
-    .content {
-      flex-direction: column;
-      width: max-content;
-    }
-
-    .divider {
-      height: 1px;
-      width: 100%;
-      background: var(--red-to-pink-to-purple-horizontal-gradient);
-      margin-block: 1.5rem;
-    }
-  }
-</style>
-
-<main class="main">
-  <div class="content">
-    <div class="left-side">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 982 239"
-        fill="none"
-        class="angular-logo"
-      >
-        <g clip-path="url(#a)">
-          <path
-            fill="url(#b)"
-            d="M388.676 191.625h30.849L363.31 31.828h-35.758l-56.215 159.797h30.848l13.174-39.356h60.061l13.256 39.356Zm-65.461-62.675 21.602-64.311h1.227l21.602 64.311h-44.431Zm126.831-7.527v70.202h-28.23V71.839h27.002v20.374h1.392c2.782-6.71 7.2-12.028 13.255-15.956 6.056-3.927 13.584-5.89 22.503-5.89 8.264 0 15.465 1.8 21.684 5.318 6.137 3.518 10.964 8.673 14.319 15.382 3.437 6.71 5.074 14.81 4.992 24.383v76.175h-28.23v-71.92c0-8.019-2.046-14.237-6.219-18.819-4.173-4.5-9.819-6.791-17.102-6.791-4.91 0-9.328 1.063-13.174 3.272-3.846 2.128-6.792 5.237-9.001 9.328-2.046 4.009-3.191 8.918-3.191 14.728ZM589.233 239c-10.147 0-18.82-1.391-26.103-4.091-7.282-2.7-13.092-6.382-17.511-10.964-4.418-4.582-7.528-9.655-9.164-15.219l25.448-6.136c1.145 2.372 2.782 4.663 4.991 6.954 2.209 2.291 5.155 4.255 8.837 5.81 3.683 1.554 8.428 2.291 14.074 2.291 8.019 0 14.647-1.964 19.884-5.81 5.237-3.845 7.856-10.227 7.856-19.064v-22.665h-1.391c-1.473 2.946-3.601 5.892-6.383 9.001-2.782 3.109-6.464 5.645-10.965 7.691-4.582 2.046-10.228 3.109-17.101 3.109-9.165 0-17.511-2.209-25.039-6.545-7.446-4.337-13.42-10.883-17.757-19.474-4.418-8.673-6.628-19.473-6.628-32.565 0-13.091 2.21-24.301 6.628-33.383 4.419-9.082 10.311-15.955 17.839-20.7 7.528-4.746 15.874-7.037 25.039-7.037 7.037 0 12.846 1.145 17.347 3.518 4.582 2.373 8.182 5.236 10.883 8.51 2.7 3.272 4.746 6.382 6.137 9.327h1.554v-19.8h27.821v121.749c0 10.228-2.454 18.737-7.364 25.447-4.91 6.709-11.538 11.7-20.048 15.055-8.509 3.355-18.165 4.991-28.884 4.991Zm.245-71.266c5.974 0 11.047-1.473 15.302-4.337 4.173-2.945 7.446-7.118 9.573-12.519 2.21-5.482 3.274-12.027 3.274-19.637 0-7.609-1.064-14.155-3.274-19.8-2.127-5.646-5.318-10.064-9.491-13.255-4.174-3.11-9.329-4.746-15.384-4.746s-11.537 1.636-15.792 4.91c-4.173 3.272-7.365 7.772-9.492 13.418-2.128 5.727-3.191 12.191-3.191 19.392 0 7.2 1.063 13.745 3.273 19.228 2.127 5.482 5.318 9.736 9.573 12.764 4.174 3.027 9.41 4.582 15.629 4.582Zm141.56-26.51V71.839h28.23v119.786h-27.412v-21.273h-1.227c-2.7 6.709-7.119 12.191-13.338 16.446-6.137 4.255-13.747 6.382-22.748 6.382-7.855 0-14.81-1.718-20.783-5.237-5.974-3.518-10.72-8.591-14.075-15.382-3.355-6.709-5.073-14.891-5.073-24.464V71.839h28.312v71.921c0 7.609 2.046 13.664 6.219 18.083 4.173 4.5 9.655 6.709 16.365 6.709 4.173 0 8.183-.982 12.111-3.028 3.927-2.045 7.118-5.072 9.655-9.082 2.537-4.091 3.764-9.164 3.764-15.218Zm65.707-109.395v159.796h-28.23V31.828h28.23Zm44.841 162.169c-7.61 0-14.402-1.391-20.457-4.091-6.055-2.7-10.883-6.791-14.32-12.109-3.518-5.319-5.237-11.946-5.237-19.801 0-6.791 1.228-12.355 3.765-16.773 2.536-4.419 5.891-7.937 10.228-10.637 4.337-2.618 9.164-4.664 14.647-6.055 5.4-1.391 11.046-2.373 16.856-3.027 7.037-.737 12.683-1.391 17.102-1.964 4.337-.573 7.528-1.555 9.574-2.782 1.963-1.309 3.027-3.273 3.027-5.973v-.491c0-5.891-1.718-10.391-5.237-13.664-3.518-3.191-8.51-4.828-15.056-4.828-6.955 0-12.356 1.473-16.447 4.5-4.009 3.028-6.71 6.546-8.183 10.719l-26.348-3.764c2.046-7.282 5.483-13.336 10.31-18.328 4.746-4.909 10.638-8.59 17.511-11.045 6.955-2.455 14.565-3.682 22.912-3.682 5.809 0 11.537.654 17.265 2.045s10.965 3.6 15.711 6.71c4.746 3.109 8.51 7.282 11.455 12.6 2.864 5.318 4.337 11.946 4.337 19.883v80.184h-27.166v-16.446h-.9c-1.719 3.355-4.092 6.464-7.201 9.328-3.109 2.864-6.955 5.237-11.619 6.955-4.828 1.718-10.229 2.536-16.529 2.536Zm7.364-20.701c5.646 0 10.556-1.145 14.729-3.354 4.173-2.291 7.364-5.237 9.655-9.001 2.292-3.763 3.355-7.854 3.355-12.273v-14.155c-.9.737-2.373 1.391-4.5 2.046-2.128.654-4.419 1.145-7.037 1.636-2.619.491-5.155.9-7.692 1.227-2.537.328-4.746.655-6.628.901-4.173.572-8.019 1.472-11.292 2.781-3.355 1.31-5.973 3.11-7.855 5.401-1.964 2.291-2.864 5.318-2.864 8.918 0 5.237 1.882 9.164 5.728 11.782 3.682 2.782 8.51 4.091 14.401 4.091Zm64.643 18.328V71.839h27.412v19.965h1.227c2.21-6.955 5.974-12.274 11.292-16.038 5.319-3.763 11.456-5.645 18.329-5.645 1.555 0 3.355.082 5.237.163 1.964.164 3.601.328 4.91.573v25.938c-1.227-.41-3.109-.819-5.646-1.146a58.814 58.814 0 0 0-7.446-.49c-5.155 0-9.738 1.145-13.829 3.354-4.091 2.209-7.282 5.236-9.655 9.164-2.373 3.927-3.519 8.427-3.519 13.5v70.448h-28.312ZM222.077 39.192l-8.019 125.923L137.387 0l84.69 39.192Zm-53.105 162.825-57.933 33.056-57.934-33.056 11.783-28.556h92.301l11.783 28.556ZM111.039 62.675l30.357 73.803H80.681l30.358-73.803ZM7.937 165.115 0 39.192 84.69 0 7.937 165.115Z"
-          />
-          <path
-            fill="url(#c)"
-            d="M388.676 191.625h30.849L363.31 31.828h-35.758l-56.215 159.797h30.848l13.174-39.356h60.061l13.256 39.356Zm-65.461-62.675 21.602-64.311h1.227l21.602 64.311h-44.431Zm126.831-7.527v70.202h-28.23V71.839h27.002v20.374h1.392c2.782-6.71 7.2-12.028 13.255-15.956 6.056-3.927 13.584-5.89 22.503-5.89 8.264 0 15.465 1.8 21.684 5.318 6.137 3.518 10.964 8.673 14.319 15.382 3.437 6.71 5.074 14.81 4.992 24.383v76.175h-28.23v-71.92c0-8.019-2.046-14.237-6.219-18.819-4.173-4.5-9.819-6.791-17.102-6.791-4.91 0-9.328 1.063-13.174 3.272-3.846 2.128-6.792 5.237-9.001 9.328-2.046 4.009-3.191 8.918-3.191 14.728ZM589.233 239c-10.147 0-18.82-1.391-26.103-4.091-7.282-2.7-13.092-6.382-17.511-10.964-4.418-4.582-7.528-9.655-9.164-15.219l25.448-6.136c1.145 2.372 2.782 4.663 4.991 6.954 2.209 2.291 5.155 4.255 8.837 5.81 3.683 1.554 8.428 2.291 14.074 2.291 8.019 0 14.647-1.964 19.884-5.81 5.237-3.845 7.856-10.227 7.856-19.064v-22.665h-1.391c-1.473 2.946-3.601 5.892-6.383 9.001-2.782 3.109-6.464 5.645-10.965 7.691-4.582 2.046-10.228 3.109-17.101 3.109-9.165 0-17.511-2.209-25.039-6.545-7.446-4.337-13.42-10.883-17.757-19.474-4.418-8.673-6.628-19.473-6.628-32.565 0-13.091 2.21-24.301 6.628-33.383 4.419-9.082 10.311-15.955 17.839-20.7 7.528-4.746 15.874-7.037 25.039-7.037 7.037 0 12.846 1.145 17.347 3.518 4.582 2.373 8.182 5.236 10.883 8.51 2.7 3.272 4.746 6.382 6.137 9.327h1.554v-19.8h27.821v121.749c0 10.228-2.454 18.737-7.364 25.447-4.91 6.709-11.538 11.7-20.048 15.055-8.509 3.355-18.165 4.991-28.884 4.991Zm.245-71.266c5.974 0 11.047-1.473 15.302-4.337 4.173-2.945 7.446-7.118 9.573-12.519 2.21-5.482 3.274-12.027 3.274-19.637 0-7.609-1.064-14.155-3.274-19.8-2.127-5.646-5.318-10.064-9.491-13.255-4.174-3.11-9.329-4.746-15.384-4.746s-11.537 1.636-15.792 4.91c-4.173 3.272-7.365 7.772-9.492 13.418-2.128 5.727-3.191 12.191-3.191 19.392 0 7.2 1.063 13.745 3.273 19.228 2.127 5.482 5.318 9.736 9.573 12.764 4.174 3.027 9.41 4.582 15.629 4.582Zm141.56-26.51V71.839h28.23v119.786h-27.412v-21.273h-1.227c-2.7 6.709-7.119 12.191-13.338 16.446-6.137 4.255-13.747 6.382-22.748 6.382-7.855 0-14.81-1.718-20.783-5.237-5.974-3.518-10.72-8.591-14.075-15.382-3.355-6.709-5.073-14.891-5.073-24.464V71.839h28.312v71.921c0 7.609 2.046 13.664 6.219 18.083 4.173 4.5 9.655 6.709 16.365 6.709 4.173 0 8.183-.982 12.111-3.028 3.927-2.045 7.118-5.072 9.655-9.082 2.537-4.091 3.764-9.164 3.764-15.218Zm65.707-109.395v159.796h-28.23V31.828h28.23Zm44.841 162.169c-7.61 0-14.402-1.391-20.457-4.091-6.055-2.7-10.883-6.791-14.32-12.109-3.518-5.319-5.237-11.946-5.237-19.801 0-6.791 1.228-12.355 3.765-16.773 2.536-4.419 5.891-7.937 10.228-10.637 4.337-2.618 9.164-4.664 14.647-6.055 5.4-1.391 11.046-2.373 16.856-3.027 7.037-.737 12.683-1.391 17.102-1.964 4.337-.573 7.528-1.555 9.574-2.782 1.963-1.309 3.027-3.273 3.027-5.973v-.491c0-5.891-1.718-10.391-5.237-13.664-3.518-3.191-8.51-4.828-15.056-4.828-6.955 0-12.356 1.473-16.447 4.5-4.009 3.028-6.71 6.546-8.183 10.719l-26.348-3.764c2.046-7.282 5.483-13.336 10.31-18.328 4.746-4.909 10.638-8.59 17.511-11.045 6.955-2.455 14.565-3.682 22.912-3.682 5.809 0 11.537.654 17.265 2.045s10.965 3.6 15.711 6.71c4.746 3.109 8.51 7.282 11.455 12.6 2.864 5.318 4.337 11.946 4.337 19.883v80.184h-27.166v-16.446h-.9c-1.719 3.355-4.092 6.464-7.201 9.328-3.109 2.864-6.955 5.237-11.619 6.955-4.828 1.718-10.229 2.536-16.529 2.536Zm7.364-20.701c5.646 0 10.556-1.145 14.729-3.354 4.173-2.291 7.364-5.237 9.655-9.001 2.292-3.763 3.355-7.854 3.355-12.273v-14.155c-.9.737-2.373 1.391-4.5 2.046-2.128.654-4.419 1.145-7.037 1.636-2.619.491-5.155.9-7.692 1.227-2.537.328-4.746.655-6.628.901-4.173.572-8.019 1.472-11.292 2.781-3.355 1.31-5.973 3.11-7.855 5.401-1.964 2.291-2.864 5.318-2.864 8.918 0 5.237 1.882 9.164 5.728 11.782 3.682 2.782 8.51 4.091 14.401 4.091Zm64.643 18.328V71.839h27.412v19.965h1.227c2.21-6.955 5.974-12.274 11.292-16.038 5.319-3.763 11.456-5.645 18.329-5.645 1.555 0 3.355.082 5.237.163 1.964.164 3.601.328 4.91.573v25.938c-1.227-.41-3.109-.819-5.646-1.146a58.814 58.814 0 0 0-7.446-.49c-5.155 0-9.738 1.145-13.829 3.354-4.091 2.209-7.282 5.236-9.655 9.164-2.373 3.927-3.519 8.427-3.519 13.5v70.448h-28.312ZM222.077 39.192l-8.019 125.923L137.387 0l84.69 39.192Zm-53.105 162.825-57.933 33.056-57.934-33.056 11.783-28.556h92.301l11.783 28.556ZM111.039 62.675l30.357 73.803H80.681l30.358-73.803ZM7.937 165.115 0 39.192 84.69 0 7.937 165.115Z"
-          />
-        </g>
-        <defs>
-          <radialGradient
-            id="c"
-            cx="0"
-            cy="0"
-            r="1"
-            gradientTransform="rotate(118.122 171.182 60.81) scale(205.794)"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stop-color="#FF41F8" />
-            <stop offset=".707" stop-color="#FF41F8" stop-opacity=".5" />
-            <stop offset="1" stop-color="#FF41F8" stop-opacity="0" />
-          </radialGradient>
-          <linearGradient
-            id="b"
-            x1="0"
-            x2="982"
-            y1="192"
-            y2="192"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stop-color="#F0060B" />
-            <stop offset="0" stop-color="#F0070C" />
-            <stop offset=".526" stop-color="#CC26D5" />
-            <stop offset="1" stop-color="#7702FF" />
-          </linearGradient>
-          <clipPath id="a"><path fill="#fff" d="M0 0h982v239H0z" /></clipPath>
-        </defs>
-      </svg>
-      <h1>Hello, {{ title() }}</h1>
-      <p>Congratulations! Your app is running. 🎉</p>
-    </div>
-    <div class="divider" role="separator" aria-label="Divider"></div>
-    <div class="right-side">
-      <div class="pill-group">
-        @for (item of [
-          { title: 'Explore the Docs', link: 'https://angular.dev' },
-          { title: 'Learn with Tutorials', link: 'https://angular.dev/tutorials' },
-          { title: 'Prompt and best practices for AI', link: 'https://angular.dev/ai/develop-with-ai'},
-          { title: 'CLI Docs', link: 'https://angular.dev/tools/cli' },
-          { title: 'Angular Language Service', link: 'https://angular.dev/tools/language-service' },
-          { title: 'Angular DevTools', link: 'https://angular.dev/tools/devtools' },
-        ]; track item.title) {
-          <a
-            class="pill"
-            [href]="item.link"
-            target="_blank"
-            rel="noopener"
-          >
-            <span>{{ item.title }}</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="14"
-              viewBox="0 -960 960 960"
-              width="14"
-              fill="currentColor"
-            >
-              <path
-                d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z"
-              />
+          <!-- Resetar dia -->
+          <button (click)="queueService.resetDayState()" title="Reiniciar dia" class="btn-danger" style="padding: 0.6rem 0.8rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
             </svg>
-          </a>
+          </button>
+
+          <!-- Habilitar Som -->
+          <button (click)="soundEnabled.set(!soundEnabled())" [title]="soundEnabled() ? 'Silenciar Áudio' : 'Ativar Áudio'">
+            @if (soundEnabled()) {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              </svg>
+            } @else {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-danger);">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <line x1="23" y1="9" x2="17" y2="15"></line>
+                <line x1="17" y1="9" x2="23" y2="15"></line>
+              </svg>
+            }
+          </button>
+        </div>
+
+        <!-- Velocidade -->
+        <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.5rem;">
+          <label for="speed-select">Velocidade:</label>
+          <select id="speed-select" class="speed-select" 
+                  [ngModel]="queueService.state().speed" 
+                  (ngModelChange)="queueService.setSpeed($event)">
+            @for (spd of speedOptions; track spd) {
+              <option [value]="spd">{{ spd }}x ({{ spd === 1800 ? '30m/s' : spd === 300 ? '5m/s' : spd === 60 ? '1m/s' : spd + 's/min' }})</option>
+            }
+          </select>
+        </div>
+      </div>
+    </header>
+  }
+
+  <!-- Barra de Telas (4 Telas distintas, oculta se a TV estiver em tela cheia ou ao imprimir) -->
+  @if (!tvFullscreen() || activeScreen() !== 'panel') {
+    <nav class="main-tabs-nav no-print">
+      <button class="tab-btn" [class.active]="activeScreen() === 'totem'" (click)="activeScreen.set('totem')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; display: inline-block; vertical-align: middle;">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+          <line x1="12" y1="18" x2="12.01" y2="18"></line>
+        </svg>
+        1. Totem de Atendimento
+      </button>
+      <button class="tab-btn" [class.active]="activeScreen() === 'panel'" (click)="activeScreen.set('panel')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; display: inline-block; vertical-align: middle;">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+          <line x1="8" y1="21" x2="16" y2="21"></line>
+          <line x1="12" y1="17" x2="12" y2="21"></line>
+        </svg>
+        2. Painel de Chamadas (TV)
+      </button>
+      <button class="tab-btn" [class.active]="activeScreen() === 'teller'" (click)="activeScreen.set('teller')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; display: inline-block; vertical-align: middle;">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        3. Painel do Atendente (Guichês)
+      </button>
+      <button class="tab-btn" [class.active]="activeScreen() === 'reports'" (click)="activeScreen.set('reports')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; display: inline-block; vertical-align: middle;">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        4. Relatórios Estatísticos
+      </button>
+    </nav>
+  }
+
+  <!-- Spinner de Carregamento para Simulações Rápidas -->
+  @if (simulating()) {
+    <div style="background: rgba(0,0,0,0.75); position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(8px);">
+      <div style="width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: var(--color-primary); border-radius: 50%; animation: sonarCall 1s linear infinite;"></div>
+      <p style="margin-top: 1.5rem; font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; color: white;">Simulando atendimentos em alta velocidade...</p>
+    </div>
+  }
+
+  <!-- TELA 1: TOTEM DE ATENDIMENTO -->
+  @if (activeScreen() === 'totem') {
+    <div class="dashboard-grid no-print" style="grid-template-columns: 1fr; justify-items: center;">
+      <section class="card" style="width: 100%; max-width: 600px; padding: 2rem;">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+          <div class="brand-icon" style="margin: 0 auto 1rem; width: 60px; height: 60px; font-size: 1.75rem;">AC</div>
+          <h2>Totem de Autoatendimento</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Por favor, selecione uma categoria abaixo para retirar sua senha:</p>
+        </div>
+
+        <div class="totem-grid" style="grid-template-columns: 1fr; gap: 1.25rem; margin-bottom: 2rem;">
+          <!-- Botão SP -->
+          <button class="totem-button" (click)="printTicket('SP')" [disabled]="queueService.state().simulatedTime >= 1020" style="padding: 1.5rem; flex-direction: row; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+              <span class="badge-type bg-sp">SP</span>
+              <div style="text-align: left;">
+                <h3 style="font-size: 1.25rem; font-weight: 700;">Atendimento Prioritário</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Gestantes, idosos, portadores de necessidades especiais</p>
+              </div>
+            </div>
+            <span class="queue-count" style="font-size: 1rem;">Fila: {{ queueService.spQueue().length }}</span>
+          </button>
+
+          <!-- Botão SE -->
+          <button class="totem-button" (click)="printTicket('SE')" [disabled]="queueService.state().simulatedTime >= 1020" style="padding: 1.5rem; flex-direction: row; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+              <span class="badge-type bg-se">SE</span>
+              <div style="text-align: left;">
+                <h3 style="font-size: 1.25rem; font-weight: 700;">Retirada de Exames</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Apenas entrega e retirada rápida de resultados</p>
+              </div>
+            </div>
+            <span class="queue-count" style="font-size: 1rem;">Fila: {{ queueService.seQueue().length }}</span>
+          </button>
+
+          <!-- Botão SG -->
+          <button class="totem-button" (click)="printTicket('SG')" [disabled]="queueService.state().simulatedTime >= 1020" style="padding: 1.5rem; flex-direction: row; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+              <span class="badge-type bg-sg">SG</span>
+              <div style="text-align: left;">
+                <h3 style="font-size: 1.25rem; font-weight: 700;">Atendimento Geral</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Procedimentos padrão, triagem ou consultas comuns</p>
+              </div>
+            </div>
+            <span class="queue-count" style="font-size: 1rem;">Fila: {{ queueService.sgQueue().length }}</span>
+          </button>
+        </div>
+
+        <!-- Impressão Física do Ticket (Mock) -->
+        @if (lastPrintedTicket(); as ticket) {
+          <div style="display: flex; justify-content: center; width: 100%;">
+            <div class="totem-ticket-output" style="width: 100%; max-width: 350px; padding: 2rem;">
+              <h4 style="font-size: 0.875rem; letter-spacing: 3px; font-weight: bold; border-bottom: 1px dashed #ccc; padding-bottom: 0.5rem; margin-bottom: 1rem;">Smart Lab Guichê</h4>
+              <div class="ticket-num" style="font-size: 2.75rem; font-weight: 800; margin: 0.5rem 0;">{{ ticket.number }}</div>
+              <div style="font-weight: 800; font-size: 1rem; text-transform: uppercase; color: #111; letter-spacing: 0.5px; margin-bottom: 1rem;">
+                {{ ticket.type === 'SP' ? 'Atendimento Prioritário' : ticket.type === 'SE' ? 'Retirada de Exames' : 'Atendimento Geral' }}
+              </div>
+              <div class="ticket-date" style="border-top: 1px dashed #ccc; padding-top: 0.75rem; font-size: 0.8rem; margin-top: 0.5rem;">
+                Emitida às: <strong>{{ formatSimulatedTime(ticket.issuedTime) }}</strong><br>
+                Data: {{ ticket.dateStr }}
+              </div>
+            </div>
+          </div>
+        }
+      </section>
+    </div>
+  }
+
+  <!-- TELA 2: PAINEL DE CHAMADAS (TV) -->
+  @if (activeScreen() === 'panel') {
+    <div class="no-print" style="display: flex; flex-direction: column; gap: 1rem; width: 100%; height: 100%;">
+      
+      <!-- Controles para sair da tela cheia ou ajustar áudio -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 0.5rem 1.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
+        <p style="font-size: 0.875rem; color: var(--text-muted);">Visualização do Painel Público de TV</p>
+        <div style="display: flex; gap: 0.5rem;">
+          <button (click)="soundEnabled.set(!soundEnabled())" class="btn-outline-info" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+            Som: {{ soundEnabled() ? 'Ativado' : 'Desativado' }}
+          </button>
+          <button (click)="tvFullscreen.set(!tvFullscreen())" class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+            {{ tvFullscreen() ? 'Sair de Tela Cheia' : 'Entrar em Tela Cheia' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-tv-layout" [class.flash-active]="flashActive()" style="flex: 1; min-height: 500px; padding: 2.5rem; grid-template-columns: 1fr;">
+        @if (queueService.lastCalledTickets().length > 0) {
+          <div style="display: grid; grid-template-columns: 1fr; gap: 2.5rem;">
+            @if (activeScreen() === 'panel') {
+              <div style="display: grid; grid-template-columns: 1fr; gap: 2.5rem;">
+                <!-- Bloco de Chamada Principal -->
+                <div class="main-call-screen" style="padding: 4rem 2rem; min-height: 350px; border-radius: 20px; background: rgba(255,255,255,0.01); border-color: rgba(255,255,255,0.05);">
+                  <div class="sonar-element"></div>
+                  <h3 style="font-size: 1.5rem; color: var(--text-secondary); letter-spacing: 4px;">SENHA CHAMADA</h3>
+                  <div class="current-number" 
+                       [class.bg-sp]="queueService.lastCalledTickets()[0].type === 'SP'" 
+                       [class.bg-se]="queueService.lastCalledTickets()[0].type === 'SE'" 
+                       [class.bg-sg]="queueService.lastCalledTickets()[0].type === 'SG'" 
+                       style="font-size: 6rem; padding: 1rem 4rem; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.6);">
+                    {{ queueService.lastCalledTickets()[0].number }}
+                  </div>
+                  <div class="guiche-announce" style="font-size: 3rem; margin-top: 1.5rem; text-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                    GUICHÊ {{ queueService.lastCalledTickets()[0].guicheId }}
+                  </div>
+                </div>
+
+                <!-- Histórico Lateral (Exibido horizontalmente em tela grande) -->
+                <div class="tv-history-panel" style="width: 100%;">
+                  <h4 style="font-size: 1rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.75rem;">Últimas Chamadas</h4>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    @for (ticket of queueService.lastCalledTickets().slice(1); track ticket.number) {
+                      <div class="history-item" style="padding: 1rem; flex-direction: column; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.03);">
+                        <span class="table-badge" [class.bg-sp]="ticket.type === 'SP'" [class.bg-se]="ticket.type === 'SE'" [class.bg-sg]="ticket.type === 'SG'" style="font-size: 0.8rem; padding: 0.25rem 0.6rem;">
+                          {{ ticket.type === 'SP' ? 'Prioritária' : ticket.type === 'SE' ? 'Exame' : 'Geral' }}
+                        </span>
+                        <span class="number" style="font-size: 1.5rem;">{{ ticket.number }}</span>
+                        <div class="guiche" style="font-size: 0.9rem; font-weight: 600; color: var(--color-success);">Guichê {{ ticket.guicheId }}</div>
+                      </div>
+                    } @empty {
+                      <p style="color: var(--text-muted); font-size: 0.9rem; grid-column: 1/-1; text-align: center; padding: 2rem;">Aguardando histórico de chamadas...</p>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 400px; color: var(--text-muted); text-align: center; gap: 1.5rem;">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="opacity: 0.3;">
+              <rect x="2" y="2" width="20" height="15" rx="2"></rect>
+              <line x1="12" y1="17" x2="12" y2="22"></line>
+              <line x1="8" y1="22" x2="16" y2="22"></line>
+            </svg>
+            <div>
+              <h2 style="font-family: var(--font-display); font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Painel Aguardando Chamadas</h2>
+              <p style="font-size: 0.95rem; max-width: 400px;">Nenhuma senha foi chamada ainda no dia de hoje. Os atendentes devem acionar o comando em seus painéis.</p>
+            </div>
+          </div>
         }
       </div>
-      <div class="social-links">
-        <a
-          href="https://github.com/angular/angular"
-          aria-label="Github"
-          target="_blank"
-          rel="noopener"
-        >
-          <svg
-            width="25"
-            height="24"
-            viewBox="0 0 25 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            alt="Github"
-          >
-            <path
-              d="M12.3047 0C5.50634 0 0 5.50942 0 12.3047C0 17.7423 3.52529 22.3535 8.41332 23.9787C9.02856 24.0946 9.25414 23.7142 9.25414 23.3871C9.25414 23.0949 9.24389 22.3207 9.23876 21.2953C5.81601 22.0377 5.09414 19.6444 5.09414 19.6444C4.53427 18.2243 3.72524 17.8449 3.72524 17.8449C2.61064 17.082 3.81137 17.0973 3.81137 17.0973C5.04697 17.1835 5.69604 18.3647 5.69604 18.3647C6.79321 20.2463 8.57636 19.7029 9.27978 19.3881C9.39052 18.5924 9.70736 18.0499 10.0591 17.7423C7.32641 17.4347 4.45429 16.3765 4.45429 11.6618C4.45429 10.3185 4.9311 9.22133 5.72065 8.36C5.58222 8.04931 5.16694 6.79833 5.82831 5.10337C5.82831 5.10337 6.85883 4.77319 9.2121 6.36459C10.1965 6.09082 11.2424 5.95546 12.2883 5.94931C13.3342 5.95546 14.3801 6.09082 15.3644 6.36459C17.7023 4.77319 18.7328 5.10337 18.7328 5.10337C19.3942 6.79833 18.9789 8.04931 18.8559 8.36C19.6403 9.22133 20.1171 10.3185 20.1171 11.6618C20.1171 16.3888 17.2409 17.4296 14.5031 17.7321C14.9338 18.1012 15.3337 18.8559 15.3337 20.0084C15.3337 21.6552 15.3183 22.978 15.3183 23.3779C15.3183 23.7009 15.5336 24.0854 16.1642 23.9623C21.0871 22.3484 24.6094 17.7341 24.6094 12.3047C24.6094 5.50942 19.0999 0 12.3047 0Z"
-            />
-          </svg>
-        </a>
-        <a
-          href="https://x.com/angular"
-          aria-label="X"
-          target="_blank"
-          rel="noopener"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            alt="X"
-          >
-            <path
-              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-            />
-          </svg>
-        </a>
-        <a
-          href="https://www.youtube.com/channel/UCbn1OgGei-DV7aSRo_HaAiw"
-          aria-label="Youtube"
-          target="_blank"
-          rel="noopener"
-        >
-          <svg
-            width="29"
-            height="20"
-            viewBox="0 0 29 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            alt="Youtube"
-          >
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M27.4896 1.52422C27.9301 1.96749 28.2463 2.51866 28.4068 3.12258C29.0004 5.35161 29.0004 10 29.0004 10C29.0004 10 29.0004 14.6484 28.4068 16.8774C28.2463 17.4813 27.9301 18.0325 27.4896 18.4758C27.0492 18.9191 26.5 19.2389 25.8972 19.4032C23.6778 20 14.8068 20 14.8068 20C14.8068 20 5.93586 20 3.71651 19.4032C3.11363 19.2389 2.56449 18.9191 2.12405 18.4758C1.68361 18.0325 1.36732 17.4813 1.20683 16.8774C0.613281 14.6484 0.613281 10 0.613281 10C0.613281 10 0.613281 5.35161 1.20683 3.12258C1.36732 2.51866 1.68361 1.96749 2.12405 1.52422C2.56449 1.08095 3.11363 0.76113 3.71651 0.596774C5.93586 0 14.8068 0 14.8068 0C14.8068 0 23.6778 0 25.8972 0.596774C26.5 0.76113 27.0492 1.08095 27.4896 1.52422ZM19.3229 10L11.9036 5.77905V14.221L19.3229 10Z"
-            />
-          </svg>
-        </a>
+    </div>
+  }
+
+  <!-- TELA 3: PAINEL DO ATENDENTE (GUICHÊS) -->
+  @if (activeScreen() === 'teller') {
+    <div class="no-print" style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <section class="card">
+        <h2>Painel Central do Atendente (Guichês)</h2>
+        <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: -0.75rem;">Utilize este painel para chamar senhas, concluir serviços de recepção e gerenciar tellers:</p>
+
+        <!-- Fila de Espera Atual Simplificada -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem; display: flex; gap: 2rem; justify-content: space-around; flex-wrap: wrap;">
+          <div style="text-align: center;">
+            <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Espera Prioritária (SP)</div>
+            <div style="font-size: 2rem; font-weight: 700; color: var(--color-danger); font-family: var(--font-display);">{{ queueService.spQueue().length }}</div>
+          </div>
+          <div style="border-right: 1px solid var(--border-color);"></div>
+          <div style="text-align: center;">
+            <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Espera Exames (SE)</div>
+            <div style="font-size: 2rem; font-weight: 700; color: var(--color-success); font-family: var(--font-display);">{{ queueService.seQueue().length }}</div>
+          </div>
+          <div style="border-right: 1px solid var(--border-color);"></div>
+          <div style="text-align: center;">
+            <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Espera Geral (SG)</div>
+            <div style="font-size: 2rem; font-weight: 700; color: var(--color-info); font-family: var(--font-display);">{{ queueService.sgQueue().length }}</div>
+          </div>
+        </div>
+
+        <!-- Grid de Guichês -->
+        <div class="guiches-panel" style="margin-top: 1rem;">
+          @for (g of queueService.guiches(); track g.id) {
+            <div class="guiche-card" [class.serving]="g.status === 'serving'" style="padding: 1.5rem; gap: 1.25rem;">
+              <div class="guiche-header">
+                <span style="font-size: 1.125rem;">Guichê de Atendimento {{ g.id }}</span>
+                <span class="guiche-status" [class]="g.status"></span>
+              </div>
+              
+              <div class="guiche-ticket-details" style="min-height: 120px; background: rgba(0,0,0,0.15);">
+                @if (g.status === 'serving' && g.currentTicket) {
+                  <span class="table-badge" [class.bg-sp]="g.currentTicket.type === 'SP'" [class.bg-se]="g.currentTicket.type === 'SE'" [class.bg-sg]="g.currentTicket.type === 'SG'">
+                    {{ g.currentTicket.type === 'SP' ? 'Prioritário' : g.currentTicket.type === 'SE' ? 'Exames' : 'Geral' }}
+                  </span>
+                  <div class="ticket-num" style="margin-top: 0.5rem; font-size: 1.85rem;">{{ g.currentTicket.number }}</div>
+                  <div class="ticket-duration" style="font-size: 0.8rem; color: var(--color-primary);">
+                    Duração Estimada: {{ g.currentTicket.serviceDuration }} min
+                  </div>
+                } @else {
+                  <span style="color: var(--text-muted); font-size: 0.875rem;">Disponível para atendimento</span>
+                }
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <button (click)="callTicket(g.id)" 
+                        [disabled]="queueService.state().simulatedTime >= 1020 || 
+                                   (queueService.spQueue().length === 0 && queueService.seQueue().length === 0 && queueService.sgQueue().length === 0)"
+                        class="btn-primary" style="justify-content: center; width: 100%; font-size: 0.95rem; padding: 0.75rem;">
+                  Chamar Próximo
+                </button>
+                @if (g.status === 'serving') {
+                  <button (click)="completeService(g.id)" class="btn-success" style="justify-content: center; width: 100%; font-size: 0.95rem; padding: 0.75rem;">
+                    Concluir Serviço (Concluir)
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  }
+
+  <!-- TELA 4: RELATÓRIOS ESTATÍSTICOS -->
+  <div [class.reports-screen]="activeScreen() === 'reports'" [style.display]="activeScreen() === 'reports' ? 'block' : 'none'">
+    <div class="reports-container">
+      
+      <!-- Controles de Relatório (Ocultos ao imprimir) -->
+      <section class="filter-bar no-print">
+        <!-- Período -->
+        <div class="form-group">
+          <label>Tipo de Período</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="tab-btn" style="padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.875rem;" 
+                    [class.active]="reportViewType() === 'daily'" (click)="reportViewType.set('daily')">
+              Diário
+            </button>
+            <button class="tab-btn" style="padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.875rem;" 
+                    [class.active]="reportViewType() === 'monthly'" (click)="reportViewType.set('monthly')">
+              Mensal
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtro Data (Diário) -->
+        @if (reportViewType() === 'daily') {
+          <div class="form-group">
+            <label for="date-filter">Data de Análise</label>
+            <input type="date" id="date-filter" class="form-control" 
+                   [ngModel]="filterDate()" 
+                   (ngModelChange)="filterDate.set($event); queueService.setDate($event)">
+          </div>
+          <!-- Acelerar / Simular Dia Inteiro -->
+          <div class="form-group">
+            <button (click)="runFullDaySimulation()" class="btn-primary" style="font-weight: 600;">
+              Simular Dia Completo
+            </button>
+          </div>
+        }
+
+        <!-- Filtro Mês (Mensal) -->
+        @if (reportViewType() === 'monthly') {
+          <div class="form-group">
+            <label for="month-filter">Mês de Análise</label>
+            <input type="month" id="month-filter" class="form-control" 
+                   [ngModel]="filterMonth()" 
+                   (ngModelChange)="filterMonth.set($event)">
+          </div>
+          <!-- Acelerar / Simular Mês Inteiro -->
+          <div class="form-group">
+            <button (click)="runFullMonthSimulation()" class="btn-primary" style="font-weight: 600;">
+              Simular Mês Completo
+            </button>
+          </div>
+        }
+
+        <!-- Exportações e Operações -->
+        <div class="form-group" style="margin-left: auto;">
+          <div class="btn-group">
+            <button (click)="exportCSV()" class="btn-outline-info" [disabled]="reportSummary().totalIssued === 0">
+              Exportar CSV
+            </button>
+            <button (click)="exportJSON()" class="btn-outline-info" [disabled]="reportSummary().totalIssued === 0">
+              Exportar JSON
+            </button>
+            <button (click)="printPDF()" class="btn-success" style="color: white;" [disabled]="reportSummary().totalIssued === 0">
+              Gerar PDF (Imprimir)
+            </button>
+            <button (click)="clearAllHistory()" 
+                    [class.btn-danger]="!confirmClear()" 
+                    [class.btn-primary]="confirmClear()"
+                    style="transition: all 0.3s ease;">
+              {{ confirmClear() ? 'Confirme: Clique de Novo' : 'Limpar Banco' }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Título de Impressão (Exibido apenas na impressão PDF) -->
+      <div style="display: none; text-align: center; margin-bottom: 2rem;" class="print-only-title">
+        <h1 style="font-family: var(--font-display); font-size: 2.25rem; margin-bottom: 0.25rem;">Relatório Clínico - SmartGuichê</h1>
+        <p style="color: #666; font-size: 0.95rem;">Período: <strong>{{ reportSummary().dateStr }}</strong> | Gerado em: {{ queueService.state().simulatedDate }}</p>
+        <div style="border-bottom: 2px solid #333; margin-top: 1rem; width: 100%;"></div>
       </div>
+
+      <!-- KPI Dashboard Grid -->
+      <section class="kpi-grid">
+        <div class="kpi-card kpi-primary">
+          <span class="kpi-label">Senhas Emitidas</span>
+          <div class="kpi-value">{{ reportSummary().totalIssued }}</div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);" class="no-print">Total registrado no Totem</span>
+        </div>
+
+        <div class="kpi-card kpi-success">
+          <span class="kpi-label">Senhas Atendidas</span>
+          <div class="kpi-value">{{ reportSummary().totalServed }}</div>
+          <span style="font-size: 0.75rem; color: var(--text-secondary);">
+            @if (reportSummary().totalIssued > 0) {
+              Taxa de Sucesso: {{ Math.round((reportSummary().totalServed / reportSummary().totalIssued) * 100) }}%
+            } @else {
+              Taxa de Sucesso: 0%
+            }
+          </span>
+        </div>
+
+        <div class="kpi-card kpi-danger">
+          <span class="kpi-label">Ausências (No-Shows)</span>
+          <div class="kpi-value">{{ reportSummary().totalNoShow }}</div>
+          <span style="font-size: 0.75rem; color: var(--text-secondary);">
+            @if (reportSummary().totalServed + reportSummary().totalNoShow > 0) {
+              Abandono: {{ Math.round((reportSummary().totalNoShow / (reportSummary().totalServed + reportSummary().totalNoShow)) * 100) }}%
+            } @else {
+              Abandono: 0%
+            }
+          </span>
+        </div>
+
+        <div class="kpi-card kpi-warning">
+          <span class="kpi-label font-title">Tempo Médio (TM)</span>
+          <div class="kpi-value">{{ reportSummary().avgOverallDuration }} min</div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);" class="no-print">Tempo médio geral de recepção</span>
+        </div>
+      </section>
+
+      <!-- Gráficos Baseados em CSS para Estatísticas e Comparativos -->
+      <section class="stats-details-row">
+        
+        <!-- Distribuição por Tipo -->
+        <div class="chart-card">
+          <h3>Distribuição de Senhas por Tipo</h3>
+          <div class="bar-chart-css" style="margin-top: 1rem;">
+            <!-- SP -->
+            <div class="chart-bar-row">
+              <div class="chart-bar-labels">
+                <span style="font-weight: 600;">Prioritárias (SP)</span>
+                <span>{{ reportSummary().spIssued }} Emitidas | {{ reportSummary().spServed }} Atendidas</span>
+              </div>
+              <div class="chart-bar-container">
+                <div class="chart-bar-fill bg-sp" [style.width.%]="reportSummary().totalIssued > 0 ? (reportSummary().spIssued / reportSummary().totalIssued * 100) : 0"></div>
+              </div>
+            </div>
+            <!-- SE -->
+            <div class="chart-bar-row">
+              <div class="chart-bar-labels">
+                <span style="font-weight: 600;">Retirada de Exame (SE)</span>
+                <span>{{ reportSummary().seIssued }} Emitidas | {{ reportSummary().seServed }} Atendidas</span>
+              </div>
+              <div class="chart-bar-container">
+                <div class="chart-bar-fill bg-se" [style.width.%]="reportSummary().totalIssued > 0 ? (reportSummary().seIssued / reportSummary().totalIssued * 100) : 0"></div>
+              </div>
+            </div>
+            <!-- SG -->
+            <div class="chart-bar-row">
+              <div class="chart-bar-labels">
+                <span style="font-weight: 600;">Geral (SG)</span>
+                <span>{{ reportSummary().sgIssued }} Emitidas | {{ reportSummary().sgServed }} Atendidas</span>
+              </div>
+              <div class="chart-bar-container">
+                <div class="chart-bar-fill bg-sg" [style.width.%]="reportSummary().totalIssued > 0 ? (reportSummary().sgIssued / reportSummary().totalIssued * 100) : 0"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tempos Médios de Atendimento (TM) comparados ao alvo -->
+        <div class="chart-card">
+          <h3>Tempos Médios de Atendimento vs. Alvos Regulados</h3>
+          <div class="bar-chart-css" style="margin-top: 1rem;">
+            <!-- SP TM -->
+            <div class="chart-bar-row">
+              <div class="chart-bar-labels">
+                <span>Prioritário (SP) - Alvo Máximo: 20 min (Média: 15 min)</span>
+                <span style="font-weight: 700; color: var(--color-danger);">{{ reportSummary().avgSpDuration }} min</span>
+              </div>
+              <div class="chart-bar-container">
+                <div class="chart-bar-fill bg-sp" [style.width.%]="Math.min(100, (reportSummary().avgSpDuration / 20 * 100))"></div>
+              </div>
+            </div>
+            <!-- SE TM -->
+            <div class="chart-bar-row">
+              <div class="chart-bar-labels">
+                <span>Retirada Exame (SE) - Alvo Máximo: 5 min (Média: ~1.2 min)</span>
+                <span style="font-weight: 700; color: var(--color-success);">{{ reportSummary().avgSeDuration }} min</span>
+              </div>
+              <div class="chart-bar-container">
+                <div class="chart-bar-fill bg-se" [style.width.%]="Math.min(100, (reportSummary().avgSeDuration / 5 * 100))"></div>
+              </div>
+            </div>
+            <!-- SG TM -->
+            <div class="chart-bar-row">
+              <div class="chart-bar-labels">
+                <span>Geral (SG) - Alvo Máximo: 8 min (Média: 5 min)</span>
+                <span style="font-weight: 700; color: var(--color-info);">{{ reportSummary().avgSgDuration }} min</span>
+              </div>
+              <div class="chart-bar-container">
+                <div class="chart-bar-fill bg-sg" [style.width.%]="Math.min(100, (reportSummary().avgSgDuration / 10 * 100))"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tabela Detalhada com Filtros -->
+      <section class="card">
+        <h2 class="no-print">Listagem Detalhada de Atendimentos ({{ reportTickets().length }} registros)</h2>
+        <h2 style="display: none;" class="print-only-title">Detalhamento dos Atendimentos</h2>
+        
+        <!-- Filtros locais da tabela (Ocultos ao imprimir) -->
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;" class="no-print">
+          <div class="form-group">
+            <label for="table-type">Tipo de Senha</label>
+            <select id="table-type" class="form-control" [ngModel]="tableTypeFilter()" (ngModelChange)="tableTypeFilter.set($event)">
+              <option value="ALL">Todos os tipos</option>
+              <option value="SP">SP - Prioritário</option>
+              <option value="SE">SE - Retirada Exame</option>
+              <option value="SG">SG - Geral</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="table-status">Status do Atendimento</label>
+            <select id="table-status" class="form-control" [ngModel]="tableStatusFilter()" (ngModelChange)="tableStatusFilter.set($event)">
+              <option value="ALL">Todos os status</option>
+              <option value="waiting">Aguardando</option>
+              <option value="called">Chamado</option>
+              <option value="completed">Atendido</option>
+              <option value="noshow">Ausente / Descartado</option>
+              <option value="expired">Expirado / Sem Atendimento</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container" style="margin-top: 1rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Senha</th>
+                <th>Tipo</th>
+                <th>Emissão</th>
+                <th>Atendimento</th>
+                <th>Guichê</th>
+                <th>Duração</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (t of reportTickets(); track t.number) {
+                <tr>
+                  <td style="font-weight: 700; font-family: var(--font-display);">{{ t.number }}</td>
+                  <td>
+                    <span class="table-badge" [class.bg-sp]="t.type === 'SP'" [class.bg-se]="t.type === 'SE'" [class.bg-sg]="t.type === 'SG'">
+                      {{ t.type === 'SP' ? 'Prioritário' : t.type === 'SE' ? 'Exames' : 'Geral' }}
+                    </span>
+                  </td>
+                  <td>{{ formatSimulatedTime(t.issuedTime) }}</td>
+                  <td>{{ t.calledTime !== undefined ? formatSimulatedTime(t.calledTime) : '--:--' }}</td>
+                  <td>{{ t.guicheId !== undefined ? 'Guichê ' + t.guicheId : '--' }}</td>
+                  <td>{{ t.serviceDuration !== undefined ? t.serviceDuration + ' min' : '--' }}</td>
+                  <td>
+                    <span class="table-badge status-{{ t.status }}">
+                      @switch (t.status) {
+                        @case ('waiting') { Aguardando }
+                        @case ('called') { Chamando }
+                        @case ('completed') { Atendido }
+                        @case ('noshow') { Ausente }
+                        @case ('expired') { Expirado }
+                      }
+                    </span>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">Nenhuma senha encontrada para os filtros atuais.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
     </div>
   </div>
+
+  <footer class="no-print">
+    <p>SmartGuichê &copy; 2026 - Desenvolvido para simulação e controle de fluxo clínico.</p>
+  </footer>
 </main>
-
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * The content above * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * is only a placeholder * * * * * * * * * * * -->
-<!-- * * * * * * * * * * and can be replaced.  * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * End of Placeholder  * * * * * * * * * * * * -->
-<!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * -->
-
-
-<router-outlet />
