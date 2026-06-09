@@ -112,6 +112,11 @@ export class App {
     this.queueService.completeService(guicheId);
   }
 
+  resetCurrentDay() {
+    this.queueService.resetClockAndDay();
+    this.lastPrintedTicket.set(null);
+  }
+
   // --- Efeitos de Chamada (Som & Luzes) ---
 
   private triggerCallAlert(ticket: Ticket) {

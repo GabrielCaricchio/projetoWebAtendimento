@@ -115,6 +115,43 @@ export class QueueService {
     }
   }
 
+  // Reseta o horário de hoje para as 07:00, pausa simulações e limpa dados do dia atual
+  resetClockAndDay() {
+    this.pauseSimulation();
+
+    // Reseta o horário simulado
+    this.state.update(s => ({
+      ...s,
+      simulatedTime: 420,
+      lastCalledType: null
+    }));
+
+    // Remove do banco de dados geral qualquer ticket gerado no dia atual
+    const currentDate = this.state().simulatedDate;
+    this.allTickets.update(list => list.filter(t => t.dateStr !== currentDate));
+    this.saveToLocalStorage();
+
+    // Zera contadores
+    this.sequenceCounters.SP = 0;
+    this.sequenceCounters.SE = 0;
+    this.sequenceCounters.SG = 0;
+
+    // Limpa filas de hoje
+    this.spQueue.set([]);
+    this.seQueue.set([]);
+    this.sgQueue.set([]);
+
+    // Reseta guichês
+    this.guiches.set([
+      { id: 1, status: 'idle' },
+      { id: 2, status: 'idle' },
+      { id: 3, status: 'idle' }
+    ]);
+
+    // Limpa painel de chamadas
+    this.lastCalledTickets.set([]);
+  }
+
   // --- Operações de Fila (Totem / AC) ---
 
   issueTicket(type: TicketType): Ticket {
